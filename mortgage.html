@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canadian Mortgage Amortization</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons for clean UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen antialiased">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between">
+                <!-- Brand / Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-200">
+                        <i data-lucide="calculator" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-slate-900 leading-tight">MortgageTools</h1>
+                        <p class="text-xs text-slate-500 font-medium">Amortization Engine ($CAD)</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Links -->
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="#" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">Calculator</a>
+                    <button onclick="toggleAboutModal()" class="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">About</button>
+                    <div class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full font-semibold border border-emerald-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        NOTE: Values are informative only.
+                    </div>
+                </div>
+
+                <!-- Mobile Hamburger Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none cursor-pointer" aria-label="Toggle Menu">
+                    <i id="menuIcon" data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Dropdown Menu -->
+            <div id="mobileMenu" class="hidden md:hidden border-t border-slate-100 py-3 space-y-2">
+                <a href="#" class="block px-3 py-2 rounded-lg text-base font-semibold text-blue-600 bg-blue-50">Calculator</a>
+                <button onclick="toggleAboutModal(); toggleMobileMenu();" class="w-full text-left block px-3 py-2 rounded-lg text-base font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer">About</button>
+                <div class="px-3 py-2">
+                    <div class="text-xs bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl font-semibold border border-emerald-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        NOTE: Values are informative only.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- About Modal Window -->
+    <div id="aboutModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-xl space-y-4 relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-600"></i> About MortgageTools
+                </h3>
+                <button onclick="toggleAboutModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="text-sm text-slate-600 space-y-3 leading-relaxed">
+                <p>
+                    <strong>MortgageTools</strong> provides fast, reliable Canadian mortgage amortization modeling with support for custom payment frequencies.
+                </p>
+                <p>
+                    <strong>Disclaimer:</strong> All generated figures and calculations are for informational purposes only. Actual values (such as regular payment amounts and lifetime interest) may deviate by up to ±$10 depending on lender-specific rounding conventions.
+                </p>
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500">
+                    🔒 <strong>Privacy First:</strong> All calculations run entirely inside your browser. No personal or financial data is ever transmitted or stored on an external server.
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="toggleAboutModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Top Section: Inputs & Current Rates -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Inputs Form -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i> Mortgage Parameters
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Starting Balance / Principal</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
+                            <input type="number" id="principal" value="200000" step="1000" oninput="calculateMortgage()" class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Annual Interest Rate</label>
+                        <div class="relative">
+                            <input type="number" id="interestRate" value="4.00" step="0.01" oninput="calculateMortgage()" class="w-full pl-4 pr-8 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">%</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Amortization Timeline (Years)</label>
+                        <div class="relative">
+                            <input type="number" id="amortizationYears" value="10" min="1" max="50" step="1" oninput="calculateMortgage()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Payment Frequency</label>
+                        <select id="frequency" onchange="updateFrequencyDescription(); calculateMortgage();" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium bg-white">
+                            <option value="monthly">Monthly (12 payments/yr)</option>
+                            <option value="semi-monthly">Semi-Monthly (24 payments/yr)</option>
+                            <option value="biweekly">Regular Bi-Weekly (26 payments/yr)</option>
+                            <option value="double-biweekly">Double Bi-Weekly (26 payments/yr)</option>
+                            <option value="acc-biweekly">Accelerated Bi-Weekly (26 payments/yr)</option>
+                            <option value="weekly">Regular Weekly (52 payments/yr)</option>
+                            <option value="acc-weekly">Accelerated Weekly (52 payments/yr)</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 flex items-center justify-start bg-blue-50/50 p-4 rounded-xl border border-blue-100 min-h-[60px]">
+                        <p id="frequencyDesc" class="text-sm text-slate-600 font-medium leading-relaxed">
+                            <!-- Populated via Javascript -->
+                        </p>
+                    </div>
+                </div>
+
+                <button onclick="calculateMortgage()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all shadow-md shadow-blue-200 flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i> Generate Amortization Schedule
+                </button>
+            </div>
+
+            <!-- Current Bank Rates Panel -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 mb-4">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-emerald-600"></i> Sample Bank Rates
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-4">Sample typical Canadian bank terms. Click a value below to instantly test it.</p>
+                    
+                    <div class="overflow-hidden border border-slate-100 rounded-xl">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-100">
+                                    <th class="p-3 font-semibold">Term</th>
+                                    <th class="p-3 font-semibold text-right">Fixed</th>
+                                    <th class="p-3 font-semibold text-right">Variable</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <tr>
+                                    <td class="p-3 text-slate-900">3-Year</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(4.69)">4.69%</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(5.15)">5.15%</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 text-slate-900">5-Year</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(4.89)">4.89%</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(5.35)">5.35%</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 text-slate-900">10-Year</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(5.99)">5.99%</td>
+                                    <td class="p-3 text-right text-blue-600 cursor-pointer hover:underline" onclick="setRate(6.45)">6.45%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-4 leading-relaxed">💡 Selecting a rate above automatically replaces the interest input field and updates your timeline calculations immediately.</p>
+            </div>
+        </div>
+
+        <!-- Summary Cards Block -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                <div class="p-3.5 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="wallet" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Regular Payment Amount</p>
+                    <p class="text-2xl font-bold text-slate-900" id="summaryPayment">$0.00</p>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="percent" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Interest Lifetime</p>
+                    <p class="text-2xl font-bold text-slate-900" id="summaryInterest">$0.00</p>
+                </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="calendar-days" class="w-6 h-6"></i></div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Actual Payoff Time</p>
+                    <p class="text-2xl font-bold text-slate-900" id="summaryPayoff">0 Years</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Chart & View Toggles -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Schedule Visualization</h2>
+                    <p class="text-xs text-slate-500">Track remaining balance equity trajectory over the lifetime of your dynamic mortgage strategy.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="downloadCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+            <div class="relative w-full h-80">
+                <canvas id="amortizationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Data Breakdown Table Data Grid -->
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-slate-900">Amortization Ledger Table</h2>
+               <p class="text-xs text-slate-500">Chronological list breaking down every transactional milestone itemized individually. Check out <a href="https://www.bankrate.com/mortgages/amortization-calculator/" class="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">https://www.bankrate.com/mortgages/amortization-calculator/</a> to double check results.</p>
+
+            </div>
+            
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse text-sm min-w-[900px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold uppercase tracking-wider text-xs">
+                            <th class="p-4">Period</th>
+                            <th class="p-4">Starting Balance</th>
+                            <th class="p-4">Payment</th>
+                            <th class="p-4">Principal Paid</th>
+                            <th class="p-4">Interest Paid</th>
+                            <th class="p-4">Total Principal</th>
+                            <th class="p-4">Total Interest</th>
+                            <th class="p-4">Remaining Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleBody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <!-- Filled systematically dynamically via Javascript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Global references
+        let chartInstance = null;
+        let generatedScheduleData = [];
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleAboutModal() {
+            const modal = document.getElementById('aboutModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Close modal when clicking outside the modal box
+        document.getElementById('aboutModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'aboutModal') {
+                toggleAboutModal();
+            }
+        });
+
+        // Close modal when pressing the Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('aboutModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    toggleAboutModal();
+                }
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            updateFrequencyDescription();
+            calculateMortgage();
+        });
+
+        function setRate(rate) {
+            document.getElementById('interestRate').value = rate;
+            calculateMortgage();
+        }
+
+        function formatCAD(val) {
+            return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(val);
+        }
+
+        // Informative descriptive helper to enhance clarity using clear, direct language
+        function updateFrequencyDescription() {
+            const val = document.getElementById('frequency').value;
+            const descEl = document.getElementById('frequencyDesc');
+            
+            let text = "";
+            switch(val) {
+                case 'monthly': 
+                    text = "ℹ️ Monthly schedule: 12 traditional payments distributed evenly across the calendar year."; 
+                    break;
+                case 'semi-monthly': 
+                    text = "ℹ️ Semi-Monthly schedule: 24 installments total throughout the year (paid exactly twice each month)."; 
+                    break;
+                case 'biweekly': 
+                    text = "ℹ️ Regular Bi-Weekly schedule: 26 standard payments a year, occurs once every two weeks."; 
+                    break;
+                case 'double-biweekly': 
+                    text = "ℹ️ Double Bi-Weekly schedule: 26 installments a year. Each individual installment is doubled to pay down principal rapidly."; 
+                    break;
+                case 'acc-biweekly': 
+                    text = "⭐ Accelerated Bi-Weekly schedule: 26 installments a year. The payment value matches exactly half of a standard monthly rate, adding up to one extra month's payment over a year to reduce your overall interest liability."; 
+                    break;
+                case 'weekly': 
+                    text = "ℹ️ Regular Weekly schedule: 52 standard payments a year, occurs once every single week."; 
+                    break;
+                case 'acc-weekly': 
+                    text = "⭐ Accelerated Weekly schedule: 52 installments a year. The payment value matches exactly one quarter of a standard monthly rate, increasing your annual principal contributions to pay off the mortgage faster."; 
+                    break;
+            }
+            descEl.innerText = text;
+        }
+
+        function calculateMortgage() {
+            // Read inputs with defaults if field is emptied
+            const P_start = Math.max(0, parseFloat(document.getElementById('principal').value) || 0);
+            const nominalRate = Math.max(0, (parseFloat(document.getElementById('interestRate').value) || 0) / 100);
+            const amortizationYears = Math.max(1, parseInt(document.getElementById('amortizationYears').value) || 1);
+            const freqSelection = document.getElementById('frequency').value;
+
+            if (P_start <= 0 || nominalRate <= 0) {
+                // Clear outputs cleanly if invalid inputs exist
+                document.getElementById('summaryPayment').innerText = "$0.00";
+                document.getElementById('summaryInterest').innerText = "$0.00";
+                document.getElementById('summaryPayoff').innerText = "0 Years";
+                document.getElementById('scheduleBody').innerHTML = '';
+                if (chartInstance) chartInstance.destroy();
+                return;
+            }
+            // 1. Canadian Compounding Conversions Engine (Semi-Annually Compounded Mandate)
+            const effectiveAnnualRate = Math.pow(1 + nominalRate / 2, 2);
+
+            let periodsPerYear = 12;
+
+            switch (freqSelection) {
+                case 'monthly': periodsPerYear = 12; break;
+                case 'semi-monthly': periodsPerYear = 24; break;
+                case 'biweekly': 
+                case 'double-biweekly': 
+                case 'acc-biweekly': 
+                    periodsPerYear = 26; 
+                    break;
+                case 'weekly': 
+                case 'acc-weekly': 
+                    periodsPerYear = 52; 
+                    break;
+            }
+
+            const periodicRate = Math.pow(effectiveAnnualRate, 1 / periodsPerYear) - 1;
+            const totalScheduledPeriods = amortizationYears * periodsPerYear;
+
+            // 2. Core Payment Formula Matrix Calculations
+            let regularPayment = 0;
+            
+            // Standard baseline monthly rate needed to calculate accelerated options
+            const monthlyPeriodicRate = Math.pow(effectiveAnnualRate, 1 / 12) - 1;
+            const monthlyTotalPeriods = amortizationYears * 12;
+            const standardMonthlyPayment = (P_start * monthlyPeriodicRate) / (1 - Math.pow(1 + monthlyPeriodicRate, -monthlyTotalPeriods));
+
+            if (freqSelection === 'acc-biweekly') {
+                regularPayment = standardMonthlyPayment / 2;
+            } else if (freqSelection === 'acc-weekly') {
+                regularPayment = standardMonthlyPayment / 4;
+            } else if (freqSelection === 'double-biweekly') {
+                const baseBiWeekly = (P_start * periodicRate) / (1 - Math.pow(1 + periodicRate, -totalScheduledPeriods));
+                regularPayment = baseBiWeekly * 2;
+            } else {
+                // Standard calculations
+                regularPayment = (P_start * periodicRate) / (1 - Math.pow(1 + periodicRate, -totalScheduledPeriods));
+            }
+
+            // 3. Complete Iterative Loop Structure Generation
+            generatedScheduleData = [];
+            let currentBalance = P_start;
+            let totalInterest = 0;
+            let totalPrincipal = 0;
+            let periodCounter = 0;
+
+            while (currentBalance > 0.01 && periodCounter < 5000) { 
+                periodCounter++;
+                let startingBalance = currentBalance;
+                
+                let interestPaid = currentBalance * periodicRate;
+                let principalPaid = regularPayment - interestPaid;
+
+                if (principalPaid > currentBalance) {
+                    principalPaid = currentBalance;
+                    regularPayment = principalPaid + interestPaid;
+                    currentBalance = 0;
+                } else {
+                    currentBalance -= principalPaid;
+                }
+
+                totalInterest += interestPaid;
+                totalPrincipal += principalPaid;
+
+                generatedScheduleData.push({
+                    period: periodCounter,
+                    startingBalance,
+                    payment: regularPayment,
+                    principalPaid,
+                    interestPaid,
+                    totalPrincipal,
+                    totalInterest,
+                    remainingBalance: currentBalance
+                });
+            }
+
+            // Update Summaries Visual metrics
+            document.getElementById('summaryPayment').innerText = formatCAD(regularPayment);
+            document.getElementById('summaryInterest').innerText = formatCAD(totalInterest);
+            document.getElementById('summaryPayoff').innerText = `${(periodCounter / periodsPerYear).toFixed(1)} Years`;
+
+            // Populate view targets dynamically
+            renderTable();
+            renderChart();
+        }
+
+        function renderTable() {
+            const container = document.getElementById('scheduleBody');
+            container.innerHTML = '';
+
+            generatedScheduleData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-4 text-slate-500 font-mono">${row.period}</td>
+                    <td class="p-4">${formatCAD(row.startingBalance)}</td>
+                    <td class="p-4 font-semibold text-slate-900">${formatCAD(row.payment)}</td>
+                    <td class="p-4 text-emerald-600">+${formatCAD(row.principalPaid)}</td>
+                    <td class="p-4 text-amber-600">${formatCAD(row.interestPaid)}</td>
+                    <td class="p-4">${formatCAD(row.totalPrincipal)}</td>
+                    <td class="p-4">${formatCAD(row.totalInterest)}</td>
+                    <td class="p-4 font-semibold text-slate-900 font-mono">${formatCAD(row.remainingBalance)}</td>
+                `;
+                container.appendChild(tr);
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('amortizationChart').getContext('2d');
+            
+            const samplingInterval = Math.max(1, Math.floor(generatedScheduleData.length / 60));
+            const chartPoints = generatedScheduleData.filter((_, idx) => idx % samplingInterval === 0 || idx === generatedScheduleData.length - 1);
+
+            const labels = chartPoints.map(d => `P-${d.period}`);
+            const balances = chartPoints.map(d => d.remainingBalance);
+            const equity = chartPoints.map(d => d.totalPrincipal);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Remaining Balance',
+                            data: balances,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.04)',
+                            fill: true,
+                            tension: 0.2,
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                        },
+                        {
+                            label: 'Total Principal Built Equity',
+                            data: equity,
+                            borderColor: '#10b981',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'Inter', weight: 500 } } },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } },
+                        y: { 
+                            grid: { color: '#f1f5f9' }, 
+                            ticks: { 
+                                font: { family: 'Inter' },
+                                callback: value => formatCAD(value)
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function downloadCSV() {
+            if (!generatedScheduleData.length) return;
+
+            let csvRows = [];
+            csvRows.push(["Period", "Starting Balance", "Payment", "Principal Paid", "Interest Paid", "Total Principal Paid", "Total Interest Paid", "Remaining Balance"].join(","));
+
+            generatedScheduleData.forEach(row => {
+                csvRows.push([
+                    row.period,
+                    row.startingBalance.toFixed(2),
+                    row.payment.toFixed(2),
+                    row.principalPaid.toFixed(2),
+                    row.interestPaid.toFixed(2),
+                    row.totalPrincipal.toFixed(2),
+                    row.totalInterest.toFixed(2),
+                    row.remainingBalance.toFixed(2)
+                ].join(","));
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const downloadLink = document.createElement("a");
+            downloadLink.setAttribute("href", encodedUri);
+            downloadLink.setAttribute("download", "Canadian_Amortization_Schedule.csv");
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+</body>
+</html>
